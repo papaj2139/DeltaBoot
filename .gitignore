@@ -1,6 +1,5 @@
 *.EFI
-*.efi 
-*.cfg
+*.efi
 *.iso
 *.img
 *.bin

@@ -5,57 +5,10 @@ set -e
 DISK_IMG="hda.img"
 DISK_SIZE_MB=64
 EFI_BINARY="BOOTX64.EFI"
+OVMF_CODE="boot/uefi/OVMF_CODE.4m.fd"
 
 print_step() {
     echo -e "==> $1"
-}
-
-#find ovmf firmware files across common distribution paths
-find_ovmf() {
-    local OVMF_SEARCH_PATHS=(
-        "/usr/share/edk2/x64"
-        "/usr/share/OVMF"
-        "/usr/share/ovmf"
-        "/usr/share/qemu"
-        "/usr/share/edk2-ovmf"
-    )
-
-    local OVMF_CODE_NAMES=("OVMF_CODE.4m.fd" "OVMF_CODE.fd" "OVMF.fd" "ovmf-x86_64-code.bin")
-    local OVMF_VARS_NAMES=("OVMF_VARS.fd" "OVMF_VARS_4M.fd" "ovmf-x86_64-vars.bin")
-
-    OVMF_CODE=""
-    OVMF_VARS=""
-
-    #search known paths
-    for dir in "${OVMF_SEARCH_PATHS[@]}"; do
-        if [[ -d "$dir" ]]; then
-            for name in "${OVMF_CODE_NAMES[@]}"; do
-                if [[ -f "$dir/$name" ]]; then
-                    OVMF_CODE="$dir/$name"
-                    break 2
-                fi
-            done
-        fi
-    done
-
-    #fallback to find if not found in common paths
-    if [[ -z "$OVMF_CODE" ]]; then
-        OVMF_CODE=$(find /usr/share /opt 2>/dev/null -name "OVMF_CODE*.fd" | grep -v "ia32" | head -n1)
-    fi
-
-    if [[ -z "$OVMF_CODE" ]]; then
-        echo "error: ovmf firmware not found."
-        exit 1
-    fi
-
-    #find corresponding variable store
-    local ovmf_dir=$(dirname "$OVMF_CODE")
-    for name in "${OVMF_VARS_NAMES[@]}"; do
-        if [[ -f "$ovmf_dir/$name" ]]; then
-            OVMF_VARS="$ovmf_dir/$name"
-            break
-        fi
-    done
 }
 
 #create GPT disk image and ESP
@@ -65,6 +18,7 @@ create_disk_image() {
 
     #partition table creation
     sgdisk --clear --new=1:2048:0 --typecode=1:EF00 --change-name=1:"EFI System" "$DISK_IMG"
+
 
     #calculate offset for mtools
     local PART_OFFSET=$((2048 * 512))
@@ -83,7 +37,7 @@ create_disk_image() {
         exit 1
     fi
 
-    [[ -f "delboot.cfg" ]] && mcopy -i "$DISK_IMG"@@${PART_OFFSET} "delboot.cfg" ::/EFI/BOOT/delboot.cfg
+    [[ -f "boot/delboot.cfg" ]] && mcopy -i "$DISK_IMG"@@${PART_OFFSET} "boot/delboot.cfg" ::/EFI/BOOT/delboot.cfg
 }
 
 #execute qemu with ovmf
