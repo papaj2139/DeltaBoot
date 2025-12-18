@@ -1,0 +1,10 @@
+*.EFI
+*.efi 
+*.cfg
+*.iso
+*.img
+*.bin
+*.elf
+*.o
+esp/
+*.so
