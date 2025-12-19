@@ -8,6 +8,7 @@
 #include "../src/file.h"
 #include "../src/menu.h"
 #include "../src/config.h"
+#include "../src/elf.h"
 
 #define DELBOOT_NAME    "DelBoot 0.5"
 #define KERNEL_SCAN_SIZE (32 * 1024)
@@ -285,7 +286,23 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable
         req_flags |= DB_REQ_CMDLINE;
     }
     
-    uint32_t entry_offset = db_req ? db_req->entry_point : 0;
+    //check if kernel is ELF64 and load it
+    uint64_t entry_point = 0;
+    int is_elf = elf_validate(kernel_data, kernel_size);
+    
+    if (is_elf) {
+        status = elf_load(gBS, kernel_data, kernel_size, &entry_point);
+        if (EFI_ERROR(status)) {
+            con_set_color(COLOR_RED, 0);
+            con_print_at(40, 80, "Failed to load ELF segments!");
+            gBS->Stall(3000000);
+            return status;
+        }
+    } else {
+        //if raw binary then use DB header entry_point or default to offset 0
+        uint32_t entry_offset = db_req ? db_req->entry_point : 0;
+        entry_point = (uint64_t)((uint8_t *)kernel_data + entry_offset);
+    }
     
     //get memory map
     EFI_MEMORY_DESCRIPTOR *mmap = NULL;
@@ -350,8 +367,15 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable
     }
     
     //jump to kernel
-    KernelEntry kernel_entry = (KernelEntry)((uint8_t *)kernel_data + entry_offset);
-    kernel_entry(boot_info);
+    //and set up both RCX (MS ABI) and RDI (SysV ABI) so kernel works regardless of compiler
+    __asm__ volatile(
+        "mov %0, %%rcx\n\t"  //MS ABI: first arg in RCX
+        "mov %0, %%rdi\n\t"  //SysV ABI: first arg in RDI
+        "jmp *%1\n\t"
+        :
+        : "r"(boot_info), "r"(entry_point)
+        : "rcx", "rdi"
+    );
     
     for (;;) __asm__ volatile("hlt");
 }

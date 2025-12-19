@@ -22,7 +22,8 @@ BOOT_SRCS	= boot/uefi/main.c \
 			  src/console.c \
 			  src/file.c \
 			  src/menu.c \
-			  src/config.c
+			  src/config.c \
+			  src/elf.c
 BOOT_OBJS	= $(BOOT_SRCS:.c=.o)
 
 .PHONY: all clean

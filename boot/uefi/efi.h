@@ -43,6 +43,15 @@ typedef UINT8 BOOLEAN;
 #define EFI_BUFFER_TOO_SMALL     (0x8000000000000000ULL | 5)
 #define EFI_UNSUPPORTED          (0x8000000000000000ULL | 3)
 #define EFI_ABORTED              (0x8000000000000000ULL | 21)
+#define EFI_LOAD_ERROR           (0x8000000000000000ULL | 1)
+
+//allocation types for AllocatePages
+typedef enum {
+    AllocateAnyPages,
+    AllocateMaxAddress,
+    AllocateAddress,
+    MaxAllocateType
+} EFI_ALLOCATE_TYPE;
 
 //GUIDs
 
@@ -265,6 +274,16 @@ typedef struct {
 } EFI_MEMORY_DESCRIPTOR;
 
 //boot services
+typedef EFI_STATUS (EFIAPI *EFI_ALLOCATE_PAGES)(
+    IN EFI_ALLOCATE_TYPE Type,
+    IN EFI_MEMORY_TYPE MemoryType,
+    IN UINTN Pages,
+    IN OUT EFI_PHYSICAL_ADDRESS *Memory);
+
+typedef EFI_STATUS (EFIAPI *EFI_FREE_PAGES)(
+    IN EFI_PHYSICAL_ADDRESS Memory,
+    IN UINTN Pages);
+
 typedef EFI_STATUS (EFIAPI *EFI_ALLOCATE_POOL)(
     IN EFI_MEMORY_TYPE PoolType,
     IN UINTN Size,
@@ -304,8 +323,8 @@ typedef struct {
     //services
     VOID *RaiseTPL;                    //0
     VOID *RestoreTPL;                  //1
-    VOID *AllocatePages;               //2
-    VOID *FreePages;                   //3
+    EFI_ALLOCATE_PAGES AllocatePages;  //2
+    EFI_FREE_PAGES FreePages;          //3
     EFI_GET_MEMORY_MAP GetMemoryMap;   //4
     EFI_ALLOCATE_POOL AllocatePool;    //5
     EFI_FREE_POOL FreePool;            //6
