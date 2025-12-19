@@ -227,7 +227,18 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable
     //show menu and get selection
     int selection = menu_run();
     if (selection < 0) {
-        return EFI_ABORTED;
+        gfx_clear(COLOR_BG);
+        con_set_color(COLOR_RED, 0);
+        con_print_at(40, 40, "Error: No boot entries found!");
+        con_set_color(COLOR_WHITE, 0);
+        con_print_at(40, 80, "Please create a config file at:");
+        con_print_at(40, 100, "  \\EFI\\BOOT\\delboot.cfg");
+        con_set_color(COLOR_GRAY, 0);
+        con_print_at(40, 140, "Example config:");
+        con_print_at(40, 160, "  [Delta Kernel]");
+        con_print_at(40, 180, "  path=\\EFI\\BOOT\\kernel.bin");
+        gBS->Stall(5000000);
+        return EFI_NOT_FOUND;
     }
     
     //get selected entry info
