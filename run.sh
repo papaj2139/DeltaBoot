@@ -71,15 +71,8 @@ main() {
         fi
     done
 
-    #locate firmware
-    if [[ -z "${OVMF_CODE:-}" ]]; then
-        find_ovmf
-    fi
-
     #compile if source is newer than binary
-    if [[ ! -f "$EFI_BINARY" ]] || [[ -n "$(find . -name '*.c' -newer "$EFI_BINARY" 2>/dev/null)" ]]; then
-        make
-    fi
+    make > /dev/null
 
     create_disk_image
     run_qemu

@@ -25,11 +25,9 @@ BOOT_SRCS	= boot/uefi/main.c \
 			  src/config.c
 BOOT_OBJS	= $(BOOT_SRCS:.c=.o)
 
-.PHONY: all clean bootloader
+.PHONY: all clean
 
 all: $(BOOTLOADER)
-
-bootloader: $(BOOTLOADER)
 
 %.o: %.c
 	$(MINGW_CC) $(BOOT_CFLAGS) -c $< -o $@
